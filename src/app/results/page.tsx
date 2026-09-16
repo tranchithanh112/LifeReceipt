@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 
+import { getDictionary } from "@/lib/i18n/dictionaries";
+
 import { ResultsView } from "@/components/results/results-view";
 
+const t = getDictionary();
+
 export const metadata: Metadata = {
-  title: "My LifeReceipt",
-  description:
-    "An itemised receipt for one human life: what you have already spent on sleep, work, scrolling and the rest, and what it will cost by 80.",
+  title: t.meta.resultsTitle,
+  description: t.meta.resultsDescription,
   robots: { index: false, follow: true },
 };
 

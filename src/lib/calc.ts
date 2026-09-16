@@ -17,7 +17,6 @@
 
 import {
   ACTIVITIES,
-  ACTIVITY_BY_ID,
   AGE_MAX,
   AGE_MIN,
   LIFE_EXPECTANCY_MAX,
@@ -26,7 +25,7 @@ import {
   type Cadence,
   type CustomActivity,
 } from "./activities";
-import { DAYS_IN_YEAR } from "./format";
+import { DAYS_IN_YEAR } from "./i18n/format";
 import { clamp } from "./utils";
 
 export const HOURS_PER_DAY = 24;
@@ -46,8 +45,8 @@ export interface Answers {
 
 export interface LineItem {
   id: string;
-  label: string;
-  receiptLabel: string;
+  /** Only set for user-defined items; built-ins resolve their label by id. */
+  customLabel?: string;
   kind: ActivityKind;
   emoji: string;
   cadence: Cadence;
@@ -150,8 +149,7 @@ export function calculate(answers: Answers): LifeResult | null {
 
   const raw: Array<{
     id: string;
-    label: string;
-    receiptLabel: string;
+    customLabel?: string;
     kind: ActivityKind;
     emoji: string;
     cadence: Cadence;
@@ -164,8 +162,6 @@ export function calculate(answers: Answers): LifeResult | null {
     if (value == null || !Number.isFinite(value) || value <= 0) continue;
     raw.push({
       id: def.id,
-      label: def.label,
-      receiptLabel: def.receiptLabel,
       kind: def.kind,
       emoji: def.emoji,
       cadence: def.cadence,
@@ -176,11 +172,9 @@ export function calculate(answers: Answers): LifeResult | null {
 
   for (const custom of answers.custom) {
     if (!Number.isFinite(custom.value) || custom.value <= 0) continue;
-    const label = custom.label.trim() || "Other";
     raw.push({
       id: custom.id,
-      label,
-      receiptLabel: label,
+      customLabel: custom.label.trim() || undefined,
       kind: "discretionary",
       emoji: "✳️",
       cadence: custom.cadence,
@@ -263,8 +257,4 @@ export function hasEnoughToCalculate(answers: Answers): boolean {
   });
   const anyCustom = answers.custom.some((c) => c.value > 0);
   return anyBuiltIn || anyCustom;
-}
-
-export function activityLabel(id: string): string {
-  return ACTIVITY_BY_ID[id as ActivityId]?.label ?? "Other";
 }

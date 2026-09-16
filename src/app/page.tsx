@@ -1,25 +1,34 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { PrimaryCta } from "@/components/landing/primary-cta";
 import { StickyCta } from "@/components/landing/sticky-cta";
 import { Receipt } from "@/components/receipt/receipt";
+import { LocaleSwitch } from "@/components/site/locale-switch";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Wordmark } from "@/components/site/wordmark";
 import { buttonVariants } from "@/components/ui/button";
-import { AVERAGE_LIFE, demoResult } from "@/lib/demo";
+import { demoResult } from "@/lib/demo";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export default function LandingPage() {
-  const sample = demoResult();
-  // Resolved once at render and passed down, so hydration sees the same date.
-  const issuedAt = new Date();
+  const t = useT();
+  const sample = React.useMemo(() => demoResult(), []);
+  // Locked on first render so server and client print the same date.
+  const [issuedAt] = React.useState(() => new Date());
 
   return (
     <>
       <header className="no-print px-5 pt-[calc(1.25rem+var(--safe-top))] sm:px-8">
         <div className="mx-auto w-full max-w-6xl">
-          <Wordmark asLink={false} />
+          <div className="flex items-center justify-between gap-4">
+            <Wordmark asLink={false} />
+            <LocaleSwitch />
+          </div>
         </div>
       </header>
 
@@ -32,11 +41,12 @@ export default function LandingPage() {
           <div className="mx-auto grid w-full max-w-6xl items-center gap-9 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16">
             <div className="animate-fade-up">
               <h1 className="font-display text-[clamp(2.875rem,12.5vw,7rem)] leading-[0.88] tracking-[-0.02em] text-balance">
-                Where did your life <em className="italic">go?</em>
+                {t.landing.headlineLead}{" "}
+                <em className="wonk">{t.landing.headlineEm}</em>
               </h1>
 
               <p className="mt-5 max-w-[26ch] text-[1.0625rem] text-ink-muted text-balance sm:text-lg">
-                Nine questions. One very uncomfortable receipt.
+                {t.landing.sub}
               </p>
 
               <PrimaryCta className="mt-7" id="hero-cta" />
@@ -51,7 +61,7 @@ export default function LandingPage() {
               <div className="w-full max-w-[24rem] sm:[transform:rotate(-2.2deg)]">
                 <Receipt
                   result={sample}
-                  name="Sample"
+                  name={t.landing.sampleName}
                   issuedAt={issuedAt}
                   variant="preview"
                 />
@@ -62,13 +72,13 @@ export default function LandingPage() {
 
         {/* ---------------- Average-life ticker ---------------- */}
         <section
-          aria-label="What an average 80-year life costs"
+          aria-label={t.landing.tickerEyebrow}
           className="border-y border-rule/70 bg-paper-deep/40"
         >
           <div className="mx-auto w-full max-w-6xl px-5 py-9 sm:px-8 sm:py-11">
-            <p className="eyebrow">In an average 80-year life you will spend</p>
+            <p className="eyebrow">{t.landing.tickerEyebrow}</p>
             <ul className="mt-5 grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
-              {AVERAGE_LIFE.map((entry) => (
+              {t.landing.averageLife.map((entry) => (
                 <li key={entry.label}>
                   <p className="tnum font-display text-[clamp(1.75rem,6vw,2.5rem)] leading-none">
                     {entry.value}
@@ -78,8 +88,7 @@ export default function LandingPage() {
               ))}
             </ul>
             <p className="mt-6 text-[0.9375rem] text-ink-muted">
-              Yours are worse somewhere very specific. That&rsquo;s the part worth
-              finding out.
+              {t.landing.tickerNote}
             </p>
           </div>
         </section>
@@ -88,7 +97,7 @@ export default function LandingPage() {
         <section className="px-5 py-16 sm:px-8 sm:py-20">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-8 sm:flex-row sm:items-end sm:justify-between">
             <h2 className="max-w-[16ch] font-display text-[clamp(2.25rem,8.5vw,4rem)] leading-[0.95] tracking-[-0.02em]">
-              You only get one. Where is it going?
+              {t.landing.closingTitle}
             </h2>
 
             <Link
@@ -99,7 +108,7 @@ export default function LandingPage() {
                 "group w-full shrink-0 sm:w-auto",
               )}
             >
-              Print my LifeReceipt
+              {t.landing.closingCta}
               <ArrowRight
                 className="h-[1.1em] w-[1.1em] transition-transform duration-200 group-hover:translate-x-1"
                 aria-hidden

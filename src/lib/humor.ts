@@ -7,7 +7,8 @@
  */
 
 import type { LifeResult } from "./calc";
-import { formatDuration } from "./format";
+import { itemLabel } from "./i18n/labels";
+import type { Dict } from "./i18n/types";
 
 export interface Quip {
   id: string;
@@ -21,7 +22,6 @@ interface Rule {
   topic: string;
   priority: number;
   test: (ctx: Context) => boolean;
-  line: (ctx: Context) => string;
 }
 
 interface Context {
@@ -71,36 +71,30 @@ const RULES: Rule[] = [
     topic: "social",
     priority: 90,
     test: (c) => c.social >= 3,
-    line: () => "You say you don't have time. Your screen time would like a word.",
   },
   {
     id: "scroll-vs-exercise",
     topic: "social",
     priority: 95,
     test: (c) => c.exercise > 0 && c.social >= c.exercise * 10,
-    line: () => "Your thumb is currently your most trained muscle.",
   },
   {
     id: "scroll-vs-loved",
     topic: "social",
     priority: 97,
     test: (c) => c.loved > 0 && c.social >= c.loved * 1.5,
-    line: () => "Your phone receives more eye contact than the people in your life.",
   },
   {
     id: "scroll-moderate",
     topic: "social",
     priority: 55,
     test: (c) => c.social >= 1.5 && c.social < 3,
-    line: () =>
-      "A restrained scrolling habit. Still measured in years, but restrained.",
   },
   {
     id: "scroll-none",
     topic: "social",
     priority: 50,
     test: (c) => c.answered("social") && c.social < 0.5,
-    line: () => "Barely any scrolling. Either admirable or a very old phone.",
   },
 
   // --- Sleep ---------------------------------------------------------------
@@ -109,21 +103,18 @@ const RULES: Rule[] = [
     topic: "sleep",
     priority: 88,
     test: (c) => c.answered("sleep") && c.sleep < 6,
-    line: () => "Apparently sleep is optional.",
   },
   {
     id: "sleep-low-work-high",
     topic: "sleep",
     priority: 92,
     test: (c) => c.sleep > 0 && c.sleep < 6.5 && c.workPerWeekday >= 9,
-    line: () => "Sleeping less so you can work more. A flawless, undefeated strategy.",
   },
   {
     id: "sleep-high",
     topic: "sleep",
     priority: 60,
     test: (c) => c.sleep >= 9.5,
-    line: () => "An impressive commitment to horizontal living.",
   },
 
   // --- Work ----------------------------------------------------------------
@@ -132,14 +123,12 @@ const RULES: Rule[] = [
     topic: "work",
     priority: 87,
     test: (c) => c.workPerWeekday > 10,
-    line: () => "Your employer appears prominently on your LifeReceipt.",
   },
   {
     id: "work-none",
     topic: "work",
     priority: 45,
     test: (c) => c.answered("work") && c.workPerWeekday === 0,
-    line: () => "No work on the receipt. Retired, rich, or extremely optimistic.",
   },
 
   // --- Commute -------------------------------------------------------------
@@ -148,14 +137,12 @@ const RULES: Rule[] = [
     topic: "commute",
     priority: 85,
     test: (c) => c.commutePerWeekday >= 2,
-    line: () => "Your second home appears to be transportation.",
   },
   {
     id: "commute-zero",
     topic: "commute",
     priority: 40,
     test: (c) => c.answered("commute") && c.commutePerWeekday === 0,
-    line: () => "Zero commute. Somebody, at some point, made a very good decision.",
   },
 
   // --- Gaming --------------------------------------------------------------
@@ -164,14 +151,12 @@ const RULES: Rule[] = [
     topic: "gaming",
     priority: 86,
     test: (c) => c.gaming > 4,
-    line: () => "At least your Steam library is getting value for money.",
   },
   {
     id: "gaming-moderate",
     topic: "gaming",
     priority: 48,
     test: (c) => c.gaming >= 1 && c.gaming <= 4,
-    line: () => "Gaming: present, accounted for, and quietly expensive.",
   },
 
   // --- Streaming -----------------------------------------------------------
@@ -180,15 +165,12 @@ const RULES: Rule[] = [
     topic: "streaming",
     priority: 80,
     test: (c) => c.streaming >= 4,
-    line: () =>
-      "Netflix is not a personality trait, but it is now a line item on your receipt.",
   },
   {
     id: "streaming-vs-scroll",
     topic: "streaming",
     priority: 58,
     test: (c) => c.social > 0 && c.streaming > 0 && c.social >= c.streaming * 2.5,
-    line: () => "You don't watch things any more. You flick past them.",
   },
 
   // --- Exercise ------------------------------------------------------------
@@ -197,21 +179,18 @@ const RULES: Rule[] = [
     topic: "exercise",
     priority: 82,
     test: (c) => c.exercise >= 1,
-    line: () => "Suspiciously responsible behaviour detected.",
   },
   {
     id: "exercise-token",
     topic: "exercise",
     priority: 70,
     test: (c) => c.exercisePerWeek > 0 && c.exercisePerWeek < 1,
-    line: () => "Under an hour a week of exercise. Technically non-zero.",
   },
   {
     id: "exercise-zero",
     topic: "exercise",
     priority: 66,
     test: (c) => c.answered("exercise") && c.exercisePerWeek === 0,
-    line: () => "Exercise: no charge. Nothing was purchased.",
   },
 
   // --- Screens, combined ---------------------------------------------------
@@ -220,14 +199,12 @@ const RULES: Rule[] = [
     topic: "screens",
     priority: 94,
     test: (c) => c.screens >= 8,
-    line: () => "More than a third of your waking life happens behind glass.",
   },
   {
     id: "screens-vs-sleep",
     topic: "screens",
     priority: 84,
     test: (c) => c.sleep > 0 && c.screens > c.sleep,
-    line: () => "You spend more time looking at screens than sleeping. Bold.",
   },
 
   // --- People --------------------------------------------------------------
@@ -236,15 +213,12 @@ const RULES: Rule[] = [
     topic: "loved",
     priority: 76,
     test: (c) => c.loved >= 4,
-    line: () =>
-      "Whoever you spend this time with is lucky. This is the only line nobody regrets.",
   },
   {
     id: "loved-thin",
     topic: "loved",
     priority: 89,
     test: (c) => c.answered("loved") && c.loved < 0.5,
-    line: () => "Under half an hour a day with the people you love. Noted, without comment.",
   },
 
   // --- Whole-receipt observations -----------------------------------------
@@ -253,39 +227,29 @@ const RULES: Rule[] = [
     topic: "meta",
     priority: 72,
     test: (c) => c.result.overflows,
-    line: () =>
-      "Your day contains more than 24 hours. Either heroic multitasking or creative accounting.",
   },
   {
     id: "young-scroller",
     topic: "meta",
     priority: 74,
     test: (c) => c.result.age <= 21 && c.social >= 3,
-    line: () =>
-      "You have not been alive very long, and a striking amount of it has been vertical video.",
   },
   {
     id: "older-scroller",
     topic: "meta",
     priority: 74,
     test: (c) => c.result.age >= 55 && c.social >= 3,
-    line: () =>
-      "You did not make it this far through history to spend this long on a feed.",
   },
   {
     id: "top-line",
     topic: "meta",
     priority: 30,
     test: (c) => c.result.biggest != null,
-    line: (c) =>
-      `${c.result.biggest!.label} is your largest single expense at ${formatDuration(
-        c.result.biggest!.yearsSpent,
-      )}, and it is only going up.`,
   },
 ];
 
 /** Up to `limit` quips, at most one per topic, most cutting first. */
-export function buildQuips(result: LifeResult, limit = 3): Quip[] {
+export function buildQuips(result: LifeResult, t: Dict, limit = 3): Quip[] {
   const ctx = context(result);
   const seen = new Set<string>();
 
@@ -305,14 +269,28 @@ export function buildQuips(result: LifeResult, limit = 3): Quip[] {
     .slice(0, limit)
     .map((rule) => ({
       id: rule.id,
-      text: rule.line(ctx),
+      text: lineFor(rule.id, ctx, t),
       priority: rule.priority,
       topic: rule.topic,
     }));
 }
 
+/**
+ * `top-line` is the one rule whose text needs the user's own numbers, so it
+ * gets a builder while every other rule is a flat dictionary lookup.
+ */
+function lineFor(id: string, ctx: Context, t: Dict): string {
+  if (id === "top-line" && ctx.result.biggest) {
+    return t.humorTopLine(
+      itemLabel(ctx.result.biggest, t),
+      t.fmt.duration(ctx.result.biggest.yearsSpent),
+    );
+  }
+  return t.humor[id] ?? t.humorFallback;
+}
+
 /** The single line printed at the bottom of the receipt. */
-export function receiptVerdict(result: LifeResult): string {
-  const [top] = buildQuips(result, 1);
-  return top?.text ?? "One life. Spent exactly as recorded above.";
+export function receiptVerdict(result: LifeResult, t: Dict): string {
+  const [top] = buildQuips(result, t, 1);
+  return top?.text ?? t.humorFallback;
 }

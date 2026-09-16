@@ -3,10 +3,13 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 import { demoResult } from "@/lib/demo";
-import { formatDuration } from "@/lib/format";
-import { SITE_DOMAIN, SITE_TAGLINE } from "@/lib/site";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { itemReceiptLabel } from "@/lib/i18n/labels";
+import { SITE_DOMAIN } from "@/lib/site";
 
-export const alt = "LifeReceipt — Where did your life go?";
+const t = getDictionary();
+
+export const alt = `LifeReceipt — ${t.meta.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -52,7 +55,7 @@ export default async function OpenGraphImage() {
   const [mono, monoBold, serif] = await Promise.all([
     loadFont("JetBrainsMono-Regular.ttf"),
     loadFont("JetBrainsMono-Bold.ttf"),
-    loadFont("InstrumentSerif-Regular.ttf"),
+    loadFont("Fraunces-Display.ttf"),
   ]);
 
   const sample = demoResult();
@@ -96,13 +99,13 @@ export default async function OpenGraphImage() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Instrument Serif",
+              fontFamily: "Fraunces",
               fontSize: 104,
               lineHeight: 1,
               letterSpacing: -2,
             }}
           >
-            {SITE_TAGLINE}
+            {t.meta.tagline}
           </div>
           <div
             style={{
@@ -114,22 +117,27 @@ export default async function OpenGraphImage() {
               maxWidth: 520,
             }}
           >
-            An itemised receipt for the years you spend sleeping, working,
-            scrolling and commuting.
+            {t.meta.description}
           </div>
         </div>
 
+        {/*
+          Wraps rather than nowraps: this line is dictionary copy, and the
+          Vietnamese note is half again as long as the English one — pinned to
+          a single line it slid out under the receipt.
+        */}
         <div
           style={{
             display: "flex",
-            fontSize: 20,
-            letterSpacing: 2,
+            fontSize: 17,
+            lineHeight: 1.5,
+            letterSpacing: 1.5,
             color: FAINT,
             textTransform: "uppercase",
-            whiteSpace: "nowrap",
+            maxWidth: 520,
           }}
         >
-          {SITE_DOMAIN} · 30 seconds · no signup
+          {SITE_DOMAIN} · {t.landing.ctaNote}
         </div>
       </div>
 
@@ -155,12 +163,13 @@ export default async function OpenGraphImage() {
             style={{
               display: "flex",
               justifyContent: "center",
-              fontSize: 21,
+              fontSize: 19,
               fontWeight: 700,
-              letterSpacing: 7,
+              // Tracking is budgeted for the longest title, not the English one.
+              letterSpacing: 4,
             }}
           >
-            LIFE RECEIPT
+            {t.receipt.title}
           </div>
           <div
             style={{
@@ -172,7 +181,7 @@ export default async function OpenGraphImage() {
               color: FAINT,
             }}
           >
-            AGE {sample.age}
+            {t.share.ageLabel(sample.age)}
           </div>
 
           <div
@@ -196,10 +205,10 @@ export default async function OpenGraphImage() {
               }}
             >
               <span style={{ textTransform: "uppercase", letterSpacing: 1 }}>
-                {item.receiptLabel}
+                {itemReceiptLabel(item, t)}
               </span>
               <span style={{ fontWeight: 700 }}>
-                {formatDuration(item.yearsSpent)}
+                {t.fmt.duration(item.yearsSpent)}
               </span>
             </div>
           ))}
@@ -218,12 +227,13 @@ export default async function OpenGraphImage() {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: 22,
+              gap: 16,
+              fontSize: 19,
               fontWeight: 700,
             }}
           >
-            <span style={{ letterSpacing: 1 }}>TOTAL</span>
-            <span>ONE LIFE</span>
+            <span style={{ letterSpacing: 1 }}>{t.receipt.total}</span>
+            <span>{t.receipt.oneLife}</span>
           </div>
 
           <div
@@ -237,7 +247,7 @@ export default async function OpenGraphImage() {
               color: STAMP,
             }}
           >
-            ** NO REFUNDS **
+            {t.receipt.noRefunds}
           </div>
         </div>
         {teeth("bottom")}
@@ -253,7 +263,7 @@ export default async function OpenGraphImage() {
           weight: 700,
           style: "normal",
         },
-        { name: "Instrument Serif", data: serif, weight: 400, style: "normal" },
+        { name: "Fraunces", data: serif, weight: 400, style: "normal" },
       ],
     },
   );

@@ -4,17 +4,15 @@
  * Every candidate declares a priority; only candidates that clear their own
  * "is this actually interesting?" test are emitted, and at most one stat per
  * `family` survives so the list never repeats the same idea twice.
+ *
+ * The selection logic lives here; the wording lives in the dictionaries, which
+ * is why every builder takes a `Dict`. The two languages order their clauses
+ * differently, so a shared template would force one into the other's grammar.
  */
 
 import type { LifeResult, LineItem } from "./calc";
-import {
-  formatDuration,
-  formatNumber,
-  formatRatio,
-  formatYearsDecimal,
-  plural,
-  round,
-} from "./format";
+import { itemGerund } from "./i18n/labels";
+import type { Dict } from "./i18n/types";
 
 export interface Stat {
   id: string;
@@ -32,8 +30,9 @@ function sum(items: LineItem[], key: "yearsSpent" | "yearsRemaining" | "yearsLif
   return items.reduce((total, item) => total + item[key], 0);
 }
 
-export function buildStats(result: LifeResult, limit = 5): Stat[] {
+export function buildStats(result: LifeResult, t: Dict, limit = 5): Stat[] {
   const { age, lifeExpectancy, yearsRemaining, byId, items } = result;
+  const { fmt } = t;
   const candidates: Stat[] = [];
 
   const push = (stat: Stat | null) => {
@@ -52,8 +51,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (q && q.yearsRemaining >= 0.25) {
     push({
       id: "future-questionable",
-      value: formatDuration(q.yearsRemaining),
-      text: `more ${gerund(q)} between now and ${lifeExpectancy}, if nothing changes.`,
+      value: fmt.duration(q.yearsRemaining),
+      text: t.stats.future(itemGerund(q, t), lifeExpectancy),
       priority: 100,
       family: "future",
     });
@@ -64,8 +63,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
     // life to date. Same family as the plain lifetime stat, so only one shows.
     push({
       id: "outgrows-your-life",
-      value: formatYearsDecimal(q.yearsLifetime),
-      text: `${gerund(q)} — more than your entire life so far.`,
+      value: fmt.yearsDecimal(q.yearsLifetime),
+      text: t.stats.outgrowsLife(itemGerund(q, t)),
       priority: 99,
       family: "lifetime",
     });
@@ -74,8 +73,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (q && q.yearsLifetime >= 1) {
     push({
       id: "lifetime-questionable",
-      value: formatYearsDecimal(q.yearsLifetime),
-      text: `is what ${gerund(q)} costs you across one entire life.`,
+      value: fmt.yearsDecimal(q.yearsLifetime),
+      text: t.stats.lifetime(itemGerund(q, t)),
       priority: 94,
       family: "lifetime",
     });
@@ -90,8 +89,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (yearsRemaining > 1 && free > 0.5 && (sleep || work)) {
     push({
       id: "free-time",
-      value: formatDuration(free),
-      text: `of genuinely unclaimed time left, once sleep, work and commuting take their cut.`,
+      value: fmt.duration(free),
+      text: t.stats.freeTime,
       priority: 98,
       family: "budget",
     });
@@ -103,8 +102,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
     if (screenLifetime >= 3) {
       push({
         id: "screens-lifetime",
-        value: formatYearsDecimal(screenLifetime),
-        text: "of your one life will happen behind a pane of glass.",
+        value: fmt.yearsDecimal(screenLifetime),
+        text: t.stats.screens,
         priority: 96,
         family: "screens",
       });
@@ -115,17 +114,17 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (q && q.daysPerYear >= 7) {
     push({
       id: "per-year",
-      value: `${formatNumber(q.hoursPerYear)} hours`,
-      text: `a year ${verbFor(q)} — ${formatNumber(q.daysPerYear)} entire days, every single year.`,
+      value: `${fmt.number(q.hoursPerYear)}h`,
+      text: t.stats.perYear(itemGerund(q, t), fmt.number(q.daysPerYear)),
       priority: 90,
       family: "annual",
     });
   }
 
   // --- Ratios: the most quotable stat shape there is ---
-  push(ratioStat(q, exercise, "exercising", 88));
-  push(ratioStat(q, loved, "with the people you love", 92));
-  if (!q) push(ratioStat(byId.streaming, exercise, "exercising", 70));
+  push(ratioStat(q, exercise, t.stats.ratioVsExercise, 88, t));
+  push(ratioStat(q, loved, t.stats.ratioVsLoved, 92, t));
+  if (!q) push(ratioStat(byId.streaming, exercise, t.stats.ratioVsExercise, 70, t));
 
   // --- The budget you have left, in units people actually feel ---
   if (result.daysRemaining > 7) {
@@ -133,8 +132,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
     const summers = Math.floor(yearsRemaining);
     push({
       id: "saturdays",
-      value: formatNumber(saturdays),
-      text: `Saturdays left. And ${formatNumber(summers)} more summers. That is the whole supply.`,
+      value: fmt.number(saturdays),
+      text: t.stats.saturdays(fmt.number(summers)),
       priority: 95,
       family: "budget-days",
     });
@@ -143,8 +142,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (result.daysRemaining > 0) {
     push({
       id: "days-left",
-      value: formatNumber(result.daysRemaining),
-      text: `days left until you turn ${lifeExpectancy}. That is the entire remaining budget.`,
+      value: fmt.number(result.daysRemaining),
+      text: t.stats.daysLeft(lifeExpectancy),
       priority: 86,
       family: "budget-days",
     });
@@ -154,8 +153,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (sleep && sleep.yearsLifetime >= 5) {
     push({
       id: "sleep-lifetime",
-      value: formatYearsDecimal(sleep.yearsLifetime),
-      text: "spent asleep by the end. The largest purchase you will never remember.",
+      value: fmt.yearsDecimal(sleep.yearsLifetime),
+      text: t.stats.sleepLifetime,
       priority: 78,
       family: "sleep",
     });
@@ -165,8 +164,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (work && work.yearsLifetime >= 5) {
     push({
       id: "work-lifetime",
-      value: formatYearsDecimal(work.yearsLifetime),
-      text: "of your life handed to work. Hopefully you like it.",
+      value: fmt.yearsDecimal(work.yearsLifetime),
+      text: t.stats.workLifetime,
       priority: 74,
       family: "work",
     });
@@ -176,8 +175,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (commute && commute.yearsLifetime >= 1) {
     push({
       id: "commute-lifetime",
-      value: formatDuration(commute.yearsLifetime),
-      text: "in transit. Not travelling anywhere interesting. Commuting.",
+      value: fmt.duration(commute.yearsLifetime),
+      text: t.stats.commuteLifetime,
       priority: 76,
       family: "commute",
     });
@@ -187,8 +186,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (q && age > 0 && q.shareOfLife >= 0.04) {
     push({
       id: "share-so-far",
-      value: `${round(q.shareOfLife * 100, 1)}%`,
-      text: `of every year you have ever lived has already gone ${verbFor(q)}.`,
+      value: `${fmt.decimal(Math.round(q.shareOfLife * 1000) / 10)}%`,
+      text: t.stats.shareSoFar(itemGerund(q, t)),
       priority: 84,
       family: "share",
     });
@@ -198,10 +197,8 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   if (exercise && exercise.hoursPerDay > 0 && exercise.yearsLifetime < 1 && q) {
     push({
       id: "exercise-tiny",
-      value: formatDuration(exercise.yearsLifetime),
-      text: `of exercise across a whole lifetime, against ${formatDuration(
-        q.yearsLifetime,
-      )} ${verbFor(q)}.`,
+      value: fmt.duration(exercise.yearsLifetime),
+      text: t.stats.exerciseTiny(fmt.duration(q.yearsLifetime), itemGerund(q, t)),
       priority: 80,
       family: "exercise",
     });
@@ -210,46 +207,12 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   return dedupe(candidates).slice(0, limit);
 }
 
-/** Bare -ing form: reads correctly after "more …" and "X× more of your life …". */
-function gerund(item: LineItem): string {
-  switch (item.id) {
-    case "social":
-      return "scrolling";
-    case "streaming":
-      return "streaming";
-    case "gaming":
-      return "gaming";
-    case "commute":
-      return "commuting";
-    case "work":
-      return "working";
-    case "sleep":
-      return "asleep";
-    default:
-      return item.label.toLowerCase();
-  }
-}
-
-/** Prepositional form: reads correctly after "a year …" and "already gone …". */
-function verbFor(item: LineItem): string {
-  switch (item.id) {
-    case "social":
-    case "streaming":
-    case "gaming":
-    case "commute":
-    case "work":
-    case "sleep":
-      return gerund(item);
-    default:
-      return `on ${item.label.toLowerCase()}`;
-  }
-}
-
 function ratioStat(
   a: LineItem | undefined | null,
   b: LineItem | undefined | null,
-  bPhrase: string,
+  againstPhrase: string,
   basePriority: number,
+  t: Dict,
 ): Stat | null {
   if (!a || !b) return null;
   if (b.hoursPerDay <= 0 || a.hoursPerDay <= 0) return null;
@@ -257,8 +220,8 @@ function ratioStat(
   if (ratio < 1.8) return null;
   return {
     id: `ratio-${a.id}-${b.id}`,
-    value: formatRatio(ratio),
-    text: `more of your life goes ${gerund(a)} than ${bPhrase}.`,
+    value: t.fmt.ratio(ratio),
+    text: t.stats.ratio(itemGerund(a, t), againstPhrase),
     // A more extreme ratio is a more interesting stat.
     priority: basePriority + Math.min(8, Math.log2(ratio) * 3),
     family: "ratio",
@@ -277,33 +240,26 @@ function dedupe(candidates: Stat[]): Stat[] {
 }
 
 /** The one-sentence punchline baked into share cards and share text. */
-export function buildPunchline(result: LifeResult): string {
+export function buildPunchline(result: LifeResult, t: Dict): string {
   const q = result.questionable;
   if (q && q.yearsLifetime >= 1) {
-    return `Apparently I’ll spend ${formatYearsDecimal(
-      q.yearsLifetime,
-    )} of my life ${gerund(q)}.`;
+    return t.share.punchline(t.fmt.yearsDecimal(q.yearsLifetime), itemGerund(q, t));
   }
   const sleep = result.byId.sleep;
   if (sleep && sleep.yearsLifetime >= 1) {
-    return `Apparently I’ll spend ${formatYearsDecimal(
-      sleep.yearsLifetime,
-    )} of my life asleep.`;
+    return t.share.punchline(t.fmt.yearsDecimal(sleep.yearsLifetime), itemGerund(sleep, t));
   }
   const biggest = result.biggest;
   if (biggest) {
-    return `Apparently ${biggest.label.toLowerCase()} costs me ${formatYearsDecimal(
-      biggest.yearsLifetime,
-    )} of my life.`;
+    return t.share.punchline(
+      t.fmt.yearsDecimal(biggest.yearsLifetime),
+      itemGerund(biggest, t),
+    );
   }
-  return "Apparently I have no idea where my life goes.";
+  return t.share.punchlineFallback;
 }
 
-/** Short label for the "I DON'T HAVE TIME" card, e.g. "TIKTOK". */
+/** Short label for the "I DON'T HAVE TIME" card. */
 export function headlineActivity(result: LifeResult): LineItem | null {
   return result.questionable ?? result.biggest;
-}
-
-export function pluralYears(n: number) {
-  return plural(n, "year");
 }

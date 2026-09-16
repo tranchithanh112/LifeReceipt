@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Compiled output of the ad-hoc maths verification run; not source.
+    ".verify/**",
   ]),
 ]);
 

@@ -169,6 +169,16 @@ body {
   transform: translateY(1px);
 }
 
+/*
+ * Fraunces' signature axis, used where the design wants emphasis. Far more
+ * characterful than an italic, and it avoids the synthetic oblique the browser
+ * would otherwise fake on a face that ships no true italic.
+ */
+@utility wonk {
+  font-style: normal;
+  font-variation-settings: "WONK" 1;
+}
+
 @utility tnum {
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings: "tnum" 1;

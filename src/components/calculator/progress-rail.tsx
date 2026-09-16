@@ -3,11 +3,13 @@ import { cn } from "@/lib/utils";
 export function ProgressRail({
   current,
   total,
+  label,
   className,
 }: {
   /** 0-based index of the active step. */
   current: number;
   total: number;
+  label: string;
   className?: string;
 }) {
   const pct = Math.round(((current + 1) / total) * 100);
@@ -16,11 +18,11 @@ export function ProgressRail({
     <div
       className={cn("flex items-center gap-3", className)}
       role="progressbar"
-      aria-label="Question progress"
+      aria-label={label}
       aria-valuemin={1}
       aria-valuemax={total}
       aria-valuenow={current + 1}
-      aria-valuetext={`Question ${current + 1} of ${total}`}
+      aria-valuetext={`${current + 1} / ${total}`}
     >
       <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-paper-sunk">
         <div

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
  * effect dependency stays stable across renders.
  */
 export function StickyCta({ watch }: { watch: string }) {
+  const t = useT();
   const [anchorsOnScreen, setAnchorsOnScreen] = React.useState(0);
 
   React.useEffect(() => {
@@ -53,7 +55,7 @@ export function StickyCta({ watch }: { watch: string }) {
         tabIndex={visible ? undefined : -1}
         className={cn(buttonVariants({ variant: "primary", size: "lg" }), "w-full")}
       >
-        Calculate my life
+        {t.landing.cta}
         <ArrowRight className="h-[1.1em] w-[1.1em]" aria-hidden />
       </Link>
     </div>

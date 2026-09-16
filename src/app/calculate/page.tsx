@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 
+import { getDictionary } from "@/lib/i18n/dictionaries";
+
 import { Calculator } from "@/components/calculator/calculator";
 
+const t = getDictionary();
+
 export const metadata: Metadata = {
-  title: "Calculate my life",
-  description:
-    "Nine quick questions about how you spend an average day. Takes 30 seconds, no signup, nothing leaves your device.",
+  title: t.meta.calculateTitle,
+  description: t.meta.calculateDescription,
   robots: { index: false, follow: true },
 };
 

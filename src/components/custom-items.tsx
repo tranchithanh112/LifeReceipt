@@ -5,6 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { NumberField } from "@/components/ui/number-field";
+import { useT } from "@/lib/i18n";
 import { useLifeReceipt } from "@/lib/state";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ const MAX_CUSTOM = 6;
  * want it are already invested.
  */
 export function CustomItems() {
+  const t = useT();
   const { answers, addCustom, updateCustom, removeCustom } = useLifeReceipt();
   const items = answers.custom;
 
@@ -34,26 +36,26 @@ export function CustomItems() {
               <input
                 value={item.label}
                 onChange={(event) => updateCustom(item.id, { label: event.target.value })}
-                placeholder="Activity"
+                placeholder={t.customItems.activityName}
                 maxLength={24}
-                aria-label="Activity name"
+                aria-label={t.customItems.activityName}
                 className="min-w-[8rem] flex-1 bg-transparent text-[0.9375rem] font-medium text-ink outline-none placeholder:text-ink-faint"
               />
 
               <NumberField
-                label={`Hours for ${item.label || "this activity"}`}
-                controlName="hours"
+                label={t.customItems.hoursFor(item.label || t.customItems.thisActivity)}
+                controlName={t.customItems.hoursControlName}
                 value={item.value}
                 onChange={(value) => updateCustom(item.id, { value })}
                 min={0}
                 max={item.cadence === "daily" ? 14 : 60}
                 step={0.25}
-                suffix="h"
+                suffix={t.hourShort}
               />
 
               <div
                 role="group"
-                aria-label="How often"
+                aria-label={t.customItems.howOften}
                 className="inline-flex overflow-hidden rounded-full border border-ink/15"
               >
                 {(["daily", "weekly"] as const).map((cadence) => (
@@ -69,7 +71,7 @@ export function CustomItems() {
                         : "text-ink-muted hover:bg-ink/[0.06]",
                     )}
                   >
-                    {cadence === "daily" ? "/day" : "/week"}
+                    {cadence === "daily" ? t.customItems.perDay : t.customItems.perWeek}
                   </button>
                 ))}
               </div>
@@ -77,7 +79,7 @@ export function CustomItems() {
               <button
                 type="button"
                 onClick={() => removeCustom(item.id)}
-                aria-label={`Remove ${item.label || "activity"}`}
+                aria-label={t.customItems.remove(item.label || t.customItems.thisActivity)}
                 className="grid h-9 w-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-ink/[0.06] hover:text-stamp"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
@@ -94,11 +96,11 @@ export function CustomItems() {
           onClick={() => addCustom({ label: "", value: 1, cadence: "daily" })}
         >
           <Plus className="h-4 w-4" aria-hidden />
-          Add a line item
+          {t.customItems.addLineItem}
         </Button>
       ) : (
         <p className="text-[0.8125rem] text-ink-faint">
-          Six custom lines is plenty. The receipt has to fit on a phone.
+          {t.customItems.maxReached}
         </p>
       )}
     </div>

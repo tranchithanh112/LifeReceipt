@@ -9,15 +9,11 @@ import { Button } from "@/components/ui/button";
 import { NumberField } from "@/components/ui/number-field";
 import { Slider } from "@/components/ui/slider";
 import { Wordmark } from "@/components/site/wordmark";
-import {
-  ACTIVITIES,
-  AGE_MAX,
-  AGE_MIN,
-  CADENCE_UNIT,
-  type ActivityDef,
-} from "@/lib/activities";
+import { ACTIVITIES, AGE_MAX, AGE_MIN, type ActivityDef } from "@/lib/activities";
 import { toHoursPerDay, yearsOf } from "@/lib/calc";
-import { DAYS_IN_YEAR, formatDuration, formatNumber, round } from "@/lib/format";
+import { useT } from "@/lib/i18n";
+import { DAYS_IN_YEAR } from "@/lib/i18n/format";
+import type { Dict } from "@/lib/i18n/types";
 import { useLifeReceipt } from "@/lib/state";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +32,7 @@ const STEPS: Step[] = [
 const DEFAULT_AGE = 28;
 
 export function Calculator() {
+  const t = useT();
   const router = useRouter();
   const { answers, result, hydrated, setAge, setValue, reset } = useLifeReceipt();
   const [index, setIndex] = React.useState(0);
@@ -85,7 +82,7 @@ export function Calculator() {
     setIndex(0);
   };
 
-  if (!hydrated) return <CalculatorSkeleton />;
+  if (!hydrated) return <CalculatorSkeleton label={t.calculator.loading} />;
 
   const billed = result?.totalYearsSpent ?? 0;
 
@@ -100,11 +97,16 @@ export function Calculator() {
               onClick={startOver}
               className="text-[0.75rem] text-ink-faint underline decoration-ink/25 underline-offset-4 transition-colors hover:text-ink"
             >
-              Start over
+              {t.calculator.startOver}
             </button>
           </div>
 
-          <ProgressRail current={index} total={STEPS.length} className="mt-5" />
+          <ProgressRail
+            current={index}
+            total={STEPS.length}
+            label={t.calculator.progressLabel}
+            className="mt-5"
+          />
 
           {/* The till adding up as you go. Turns a form into a tally and gives
               every answer an immediate, visible consequence. */}
@@ -114,10 +116,10 @@ export function Calculator() {
           >
             {billed > 0 ? (
               <>
-                <span className="shrink-0 text-ink-faint">Billed so far</span>
+                <span className="shrink-0 text-ink-faint">{t.calculator.billedSoFar}</span>
                 <span aria-hidden className="leader" />
                 <span className="tnum shrink-0 font-bold text-ink normal-case">
-                  {formatDuration(billed)}
+                  {t.fmt.duration(billed)}
                 </span>
               </>
             ) : null}
@@ -132,13 +134,14 @@ export function Calculator() {
           {/* key forces the enter animation to replay on every step */}
           <div key={index} className="animate-fade-up">
             {step.kind === "age" ? (
-              <AgeStep value={answers.age} onChange={setAge} />
+              <AgeStep value={answers.age} onChange={setAge} t={t} />
             ) : (
               <ActivityStep
                 def={step.def}
                 age={answers.age}
                 value={answers.values[step.def.id]}
                 onChange={(next) => setValue(step.def.id, next)}
+                t={t}
               />
             )}
           </div>
@@ -152,14 +155,14 @@ export function Calculator() {
             size="icon"
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
             disabled={index === 0}
-            aria-label="Previous question"
+            aria-label={t.calculator.back}
           >
             <ArrowLeft className="h-5 w-5" aria-hidden />
           </Button>
 
           {step.kind === "activity" && !step.def.required ? (
             <Button variant="ghost" size="md" onClick={skip}>
-              Skip
+              {t.calculator.skip}
             </Button>
           ) : null}
 
@@ -169,7 +172,7 @@ export function Calculator() {
             onClick={confirmAndNext}
             className="group ml-auto min-w-[9.5rem] flex-1 sm:flex-none"
           >
-            {isLast ? "Print my receipt" : "Continue"}
+            {isLast ? t.calculator.finish : t.calculator.continue}
             <ArrowRight
               className="h-[1.1em] w-[1.1em] transition-transform duration-200 group-hover:translate-x-0.5"
               aria-hidden
@@ -230,19 +233,21 @@ function Consequence({ children }: { children: React.ReactNode }) {
 function AgeStep({
   value,
   onChange,
+  t,
 }: {
   value: number | null;
   onChange: (age: number) => void;
+  t: Dict;
 }) {
   const age = value ?? DEFAULT_AGE;
   const days = Math.round(age * DAYS_IN_YEAR);
 
   return (
     <div>
-      <StepHeading eyebrow="First things first" question="How old are you?" />
+      <StepHeading eyebrow={t.calculator.ageEyebrow} question={t.calculator.ageQuestion} />
 
       <div className="mt-10">
-        <BigValue value={String(age)} unit="years old" />
+        <BigValue value={String(age)} unit={t.calculator.ageUnit} />
 
         <Slider
           className="mt-8"
@@ -251,28 +256,25 @@ function AgeStep({
           max={AGE_MAX}
           step={1}
           onValueChange={([next]) => onChange(next)}
-          aria-label="Your age"
+          aria-label={t.calculator.ageQuestion}
         />
 
         <div className="mt-4 flex items-center justify-between gap-4">
           <span className="font-mono text-[0.6875rem] text-ink-faint">{AGE_MIN}</span>
           <NumberField
-            label="Your age, exact value"
-            controlName="age"
+            label={t.calculator.ageExact}
+            controlName={t.calculator.ageControlName}
             value={age}
             onChange={onChange}
             min={AGE_MIN}
             max={AGE_MAX}
             step={1}
-            suffix="yrs"
+            suffix={t.calculator.ageUnit}
           />
           <span className="font-mono text-[0.6875rem] text-ink-faint">{AGE_MAX}</span>
         </div>
 
-        <Consequence>
-          You have been alive for roughly{" "}
-          <strong className="font-semibold text-ink">{formatNumber(days)} days</strong>.
-        </Consequence>
+        <Consequence>{t.calculator.aliveFor(t.fmt.number(days))}</Consequence>
       </div>
     </div>
   );
@@ -285,12 +287,15 @@ function ActivityStep({
   age,
   value,
   onChange,
+  t,
 }: {
   def: ActivityDef;
   age: number | null;
   value: number | null | undefined;
   onChange: (value: number) => void;
+  t: Dict;
 }) {
+  const copy = t.activities[def.id];
   const skipped = value === null;
   const current = value ?? def.fallback;
   const hoursPerDay = toHoursPerDay(current, def.cadence);
@@ -299,13 +304,13 @@ function ActivityStep({
   return (
     <div>
       <StepHeading
-        eyebrow={`${def.emoji}  ${def.label}`}
-        question={def.question}
-        hint={def.hint}
+        eyebrow={`${def.emoji}  ${copy.label}`}
+        question={copy.question}
+        hint={copy.hint}
       />
 
       <div className={cn("mt-10 transition-opacity", skipped && "opacity-45")}>
-        <BigValue value={formatValue(current)} unit={CADENCE_UNIT[def.cadence]} />
+        <BigValue value={t.fmt.decimal(current)} unit={t.cadenceUnit[def.cadence]} />
 
         <Slider
           className="mt-8"
@@ -315,44 +320,40 @@ function ActivityStep({
           step={def.step}
           ticks={ticksFor(def)}
           onValueChange={([next]) => onChange(next)}
-          aria-label={def.question}
+          aria-label={copy.question}
         />
 
         <div className="mt-4 flex items-center justify-between gap-4">
-          <span className="font-mono text-[0.6875rem] text-ink-faint">{def.min}h</span>
+          <span className="font-mono text-[0.6875rem] text-ink-faint">
+            {def.min}
+            {t.hourShort}
+          </span>
           <NumberField
-            label={`${def.label}, exact value`}
-            controlName={def.label.toLowerCase()}
+            label={t.calculator.exactValue(copy.label)}
+            controlName={copy.label.toLowerCase()}
             value={current}
             onChange={onChange}
             min={def.min}
             max={def.max}
             step={def.step}
-            suffix="h"
+            suffix={t.hourShort}
           />
-          <span className="font-mono text-[0.6875rem] text-ink-faint">{def.max}h</span>
+          <span className="font-mono text-[0.6875rem] text-ink-faint">
+            {def.max}
+            {t.hourShort}
+          </span>
         </div>
 
         <Consequence>
-          {skipped ? (
-            "Skipped — move the slider to put it back on the receipt."
-          ) : spent != null && spent > 0 ? (
-            <>
-              That is{" "}
-              <strong className="font-semibold text-ink">{formatDuration(spent)}</strong> of
-              your life so far.
-            </>
-          ) : (
-            "Zero. Nothing to bill you for."
-          )}
+          {skipped
+            ? t.calculator.skipped
+            : spent != null && spent > 0
+              ? t.calculator.thatIs(t.fmt.duration(spent))
+              : t.calculator.zero}
         </Consequence>
       </div>
     </div>
   );
-}
-
-function formatValue(value: number) {
-  return Number.isInteger(value) ? String(value) : String(round(value, 2));
 }
 
 /** Draw notches only when there are few enough to stay legible. */
@@ -363,10 +364,10 @@ function ticksFor(def: ActivityDef) {
 
 /* --------------------------- Skeleton --------------------------- */
 
-function CalculatorSkeleton() {
+function CalculatorSkeleton({ label }: { label: string }) {
   return (
     <div className="flex min-h-dvh items-center justify-center px-5">
-      <p className="eyebrow animate-pulse">Loading your answers…</p>
+      <p className="eyebrow animate-pulse">{label}</p>
     </div>
   );
 }

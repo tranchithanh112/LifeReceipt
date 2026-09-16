@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Minus, Plus } from "lucide-react";
 
+import { useT } from "@/lib/i18n";
 import { cn, clamp, snap } from "@/lib/utils";
 
 /**
@@ -33,6 +34,7 @@ export function NumberField({
   controlName?: string;
   className?: string;
 }) {
+  const t = useT();
   const name = controlName ?? label;
   const [draft, setDraft] = React.useState<string | null>(null);
 
@@ -58,7 +60,7 @@ export function NumberField({
         type="button"
         onClick={() => nudge(-1)}
         disabled={value <= min}
-        aria-label={`Decrease ${name}`}
+        aria-label={t.numberField.decrease(name)}
         className="grid h-8 w-8 place-items-center rounded-full text-ink transition-colors hover:bg-ink/[0.07] disabled:opacity-30"
       >
         <Minus className="h-4 w-4" aria-hidden />
@@ -88,7 +90,7 @@ export function NumberField({
         type="button"
         onClick={() => nudge(1)}
         disabled={value >= max}
-        aria-label={`Increase ${name}`}
+        aria-label={t.numberField.increase(name)}
         className="grid h-8 w-8 place-items-center rounded-full text-ink transition-colors hover:bg-ink/[0.07] disabled:opacity-30"
       >
         <Plus className="h-4 w-4" aria-hidden />

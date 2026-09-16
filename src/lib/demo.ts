@@ -28,11 +28,3 @@ export function demoResult() {
   return calculate(DEMO_ANSWERS)!;
 }
 
-/** Headline figures for an average life, used in the landing page ticker. */
-export const AVERAGE_LIFE = [
-  { value: "26 years", label: "asleep" },
-  { value: "13 years", label: "at work" },
-  { value: "9 years", label: "on a screen" },
-  { value: "4 years", label: "eating" },
-  { value: "1 year", label: "commuting" },
-] as const;

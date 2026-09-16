@@ -95,7 +95,7 @@ src/
 │   ├── calculator/          the question flow
 │   ├── results/             reveal, stats, forecast + refund, share
 │   ├── share/               the two 1080×1920 share cards
-│   ├── site/                wordmark, footer
+│   ├── site/                wordmark, footer, VI/EN switch
 │   └── ui/                  button, slider, number field
 ├── hooks/                   motion preferences, rAF progress, fit-to-container
 ├── lib/
@@ -103,7 +103,7 @@ src/
 │   ├── calc.ts              all arithmetic
 │   ├── stats.ts             picks the 3–5 most interesting numbers
 │   ├── humor.ts             rules-based one-liners, one per topic
-│   ├── format.ts            durations → "9y 4m"
+│   ├── i18n/                vi + en copy, locale store, formatters
 │   ├── storage.ts           localStorage, with input sanitising
 │   ├── state.tsx            the external store behind useLifeReceipt()
 │   └── share.ts             PNG export, Web Share, clipboard fallbacks
@@ -116,8 +116,15 @@ and `share.ts`, so the maths is testable and reusable on a server.
 ## Design
 
 Modern editorial layout crossed with a thermal receipt. Warm off-white paper,
-near-black ink, one red used only as a stamp. Instrument Serif for display,
-Inter for UI, JetBrains Mono for anything printed on the receipt.
+near-black ink, one red used only as a stamp. Fraunces for display, Inter for
+UI, JetBrains Mono for anything printed on the receipt.
+
+Fraunces carries the display voice in both languages. Its `opsz` axis stays
+live so headlines run high-contrast and small text stays readable, and because
+the family ships no italic, the `WONK` axis supplies emphasis instead of a
+browser-faked oblique. All three faces are subset to Latin plus Vietnamese —
+Google's CSS API serves those as separate files, so they are vendored from the
+upstream variable sources and subset here rather than fetched per script.
 
 The torn receipt edge is an inline SVG triangle wave rather than a CSS mask,
 because the share-card exporter rasterises the DOM through an SVG
@@ -162,6 +169,19 @@ The MVP is deliberately backend-free, but the seams are already in place:
 - `axe-core` (WCAG 2.1 A/AA + best practice) reports zero violations on `/`,
   `/calculate` and `/results`.
 
+## Languages
+
+Vietnamese and English, Vietnamese by default. The toggle sits in the header on
+the landing and results pages — not mid-questionnaire, where nothing should
+compete with finishing.
+
+All copy lives in `lib/i18n/{vi,en}.ts` behind one `Dict` interface, and the
+static HTML ships in Vietnamese, so a first visit never flashes English. The
+statistics and one-liners are functions rather than `{0}` templates: the two
+languages order their clauses differently, and a template would force one into
+the other's grammar. Numbers, durations and dates follow the locale too —
+`10.227` and `9,4 năm` against `10,227` and `9.4 years`.
+
 ## Privacy
 
 Your answers stay on your device. There is no server call, no cookie, no
@@ -169,6 +189,6 @@ third-party script. The only network requests are for the page itself.
 
 ## Licences
 
-Fonts are vendored under the SIL Open Font License 1.1: Instrument Serif
-(Rodrigo Fuenzalida, Iannis Zannos), Inter (Rasmus Andersson), JetBrains Mono
+Fonts are vendored under the SIL Open Font License 1.1: Fraunces (Phaedra
+Charles, Flavia Zimbardi), Inter (Rasmus Andersson), JetBrains Mono
 (JetBrains).

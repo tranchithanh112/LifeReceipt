@@ -4,7 +4,8 @@ import * as React from "react";
 
 import { CountUp } from "@/components/count-up";
 import type { LifeResult } from "@/lib/calc";
-import { formatDuration } from "@/lib/format";
+import { useT } from "@/lib/i18n";
+import { itemGerund } from "@/lib/i18n/labels";
 
 const BEAT_MS = 1100;
 const BEATS = 3;
@@ -24,6 +25,7 @@ export function Reveal({
   result: LifeResult;
   onDone: () => void;
 }) {
+  const t = useT();
   const [beat, setBeat] = React.useState(0);
 
   React.useEffect(() => {
@@ -46,17 +48,16 @@ export function Reveal({
       >
         {beat === 0 ? (
           <p className="font-display text-[clamp(3.25rem,16vw,6rem)] leading-[0.95] tracking-[-0.03em]">
-            You&rsquo;re {result.age}.
+            {t.reveal.youAre(result.age)}
           </p>
         ) : null}
 
         {beat === 1 ? (
           <>
-            <p className="text-[1.0625rem] text-ink-muted">
-              That is about
-            </p>
+            <p className="text-[1.0625rem] text-ink-muted">{t.reveal.thatIsAbout}</p>
             <p className="tnum mt-2 font-display text-[clamp(3rem,14vw,5.5rem)] leading-none tracking-[-0.03em]">
-              <CountUp value={result.daysLived} duration={900} /> days.
+              <CountUp value={result.daysLived} duration={900} format={t.fmt.number} />{" "}
+              {t.reveal.days}
             </p>
           </>
         ) : null}
@@ -64,17 +65,17 @@ export function Reveal({
         {beat === 2 ? (
           worst ? (
             <>
-              <p className="eyebrow">You have already spent</p>
+              <p className="eyebrow">{t.reveal.alreadySpent}</p>
               <p className="tnum mt-3 font-display text-[clamp(4.25rem,23vw,8.5rem)] leading-[0.88] tracking-[-0.04em] text-stamp">
-                {formatDuration(worst.yearsSpent)}
+                {t.fmt.duration(worst.yearsSpent)}
               </p>
               <p className="mt-3 font-display text-[clamp(1.5rem,7vw,2.5rem)] leading-tight">
-                of them {gerund(worst.id, worst.label)}.
+                {t.reveal.ofThem(itemGerund(worst, t))}
               </p>
             </>
           ) : (
-            <p className="font-display text-[clamp(1.75rem,8vw,2.75rem)] leading-tight italic">
-              And this is where it went.
+            <p className="font-display text-[clamp(1.75rem,8vw,2.75rem)] leading-tight">
+              {t.reveal.andThisIsWhere}
             </p>
           )
         ) : null}
@@ -87,28 +88,10 @@ export function Reveal({
         className="absolute inset-0 flex items-end justify-end p-5 pb-[calc(1.5rem+var(--safe-bottom))] focus-visible:outline-offset-[-4px] sm:p-8"
       >
         <span className="font-mono text-[0.75rem] tracking-[0.14em] text-ink-faint uppercase underline decoration-ink/25 underline-offset-4">
-          Skip →
+          {t.reveal.skip}
         </span>
       </button>
     </div>
   );
 }
 
-function gerund(id: string, label: string) {
-  switch (id) {
-    case "social":
-      return "scrolling";
-    case "streaming":
-      return "streaming";
-    case "gaming":
-      return "gaming";
-    case "commute":
-      return "commuting";
-    case "work":
-      return "working";
-    case "sleep":
-      return "asleep";
-    default:
-      return `on ${label.toLowerCase()}`;
-  }
-}

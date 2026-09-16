@@ -2,9 +2,11 @@
 
 import * as React from "react";
 
-import { CADENCE_UNIT_SHORT } from "@/lib/activities";
 import type { LifeResult, LineItem } from "@/lib/calc";
-import { formatDuration, formatNumber, formatReceiptDate, round } from "@/lib/format";
+import { useT } from "@/lib/i18n";
+import { round } from "@/lib/i18n/format";
+import { itemReceiptLabel } from "@/lib/i18n/labels";
+import type { Dict } from "@/lib/i18n/types";
 import { SITE_DOMAIN } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +45,7 @@ export function Receipt({
   variant = "full",
   className,
 }: ReceiptProps) {
+  const t = useT();
   // Locked on first render so a re-render never changes the printed date.
   const [issued] = React.useState(() => issuedAt ?? new Date());
   const trimmedName = (name ?? "").trim();
@@ -70,39 +73,16 @@ export function Receipt({
           name={trimmedName}
           onNameChange={onNameChange}
           preview={preview}
+          t={t}
         />
 
-        <ColumnHeadings />
+        <ColumnHeadings t={t} />
 
-        <ul className="mt-1.5 space-y-[3px]">
-          {items.map((item, index) => (
-            <li
-              key={item.id}
-              className={animate ? "animate-rise" : undefined}
-              style={
-                animate
-                  ? { animationDelay: `${0.5 + index * 0.075}s` }
-                  : undefined
-              }
-            >
-              <ItemRow item={item} />
-            </li>
-          ))}
-          {items.length === 0 ? (
-            <li className="py-3 text-center text-ink-faint">
-              No line items. Suspiciously empty life.
-            </li>
-          ) : null}
-          {hidden > 0 ? (
-            <li className="pt-1 text-[0.6875rem] text-ink-faint">
-              + {hidden} more {hidden === 1 ? "item" : "items"}
-            </li>
-          ) : null}
-        </ul>
+        <ItemRows items={items} animate={animate} hidden={hidden} t={t} />
 
-        <Totals result={result} />
+        <Totals result={result} t={t} />
 
-        {preview ? null : <Highlights result={result} />}
+        {preview ? null : <Highlights result={result} t={t} />}
 
         {!preview && verdict ? (
           <>
@@ -115,10 +95,10 @@ export function Receipt({
 
         {preview ? (
           <p className="text-center text-[0.8125rem] font-bold tracking-[0.3em] uppercase">
-            ** No refunds **
+            {t.receipt.noRefunds}
           </p>
         ) : (
-          <Footer result={result} />
+          <Footer result={result} t={t} />
         )}
       </div>
 
@@ -155,17 +135,19 @@ function Header({
   name,
   onNameChange,
   preview,
+  t,
 }: {
   result: LifeResult;
   issued: Date;
   name: string;
   onNameChange?: (name: string) => void;
   preview: boolean;
+  t: Dict;
 }) {
   return (
     <header>
       <p className="text-center text-[0.9375rem] font-bold tracking-[0.34em] uppercase">
-        Life Receipt
+        {t.receipt.title}
       </p>
       <p className="mt-1 text-center text-[0.625rem] tracking-[0.2em] text-ink-faint uppercase">
         {SITE_DOMAIN}
@@ -174,14 +156,14 @@ function Header({
       <Rule />
 
       <dl className="space-y-[2px] text-[0.75rem]">
-        <Field label="Customer" fill={onNameChange != null}>
+        <Field label={t.receipt.customer} fill={onNameChange != null}>
           {onNameChange ? (
             <input
               value={name}
               onChange={(event) => onNameChange(event.target.value)}
-              placeholder="ADD YOUR NAME"
+              placeholder={t.receipt.namePlaceholder}
               maxLength={24}
-              aria-label="Your name on the receipt"
+              aria-label={t.receipt.nameField}
               spellCheck={false}
               // size={1} kills the input's ~20ch intrinsic width so it can
               // shrink inside the receipt on a 320px screen.
@@ -191,20 +173,20 @@ function Header({
               className="w-full min-w-0 bg-transparent text-right font-mono text-[0.75rem] tracking-wide text-ink uppercase outline-none placeholder:text-ink-faint/70 focus-visible:rounded-[1px] focus-visible:outline-1 focus-visible:outline-offset-[3px] focus-visible:outline-ink/60"
             />
           ) : (
-            <span className="uppercase">{name || "Anonymous"}</span>
+            <span className="uppercase">{name || t.receipt.anonymous}</span>
           )}
         </Field>
-        <Field label="Age">
+        <Field label={t.receipt.age}>
           <span className="tnum">{result.age}</span>
         </Field>
         {preview ? null : (
-          <Field label="Days lived">
-            <span className="tnum">{formatNumber(result.daysLived)}</span>
+          <Field label={t.receipt.daysLived}>
+            <span className="tnum">{t.fmt.number(result.daysLived)}</span>
           </Field>
         )}
-        <Field label="Issued">{formatReceiptDate(issued)}</Field>
+        <Field label={t.receipt.issued}>{t.fmt.receiptDate(issued)}</Field>
         {preview ? null : (
-          <Field label="Order">{orderNumber(result.seed, result.age)}</Field>
+          <Field label={t.receipt.order}>{orderNumber(result.seed, result.age)}</Field>
         )}
       </dl>
 
@@ -237,36 +219,90 @@ function Field({
   );
 }
 
-function ColumnHeadings() {
+function ColumnHeadings({ t }: { t: Dict }) {
   return (
     <div className="flex items-baseline justify-between text-[0.625rem] tracking-[0.18em] text-ink-faint uppercase">
-      <span>Item / rate</span>
-      <span>Life spent</span>
+      <span>{t.receipt.itemRate}</span>
+      <span>{t.receipt.lifeSpent}</span>
     </div>
   );
 }
 
-function rateLabel(item: LineItem) {
-  const value = round(item.input, 2);
-  return `${value}h${CADENCE_UNIT_SHORT[item.cadence]}`;
+function rateLabel(item: LineItem, t: Dict) {
+  return `${t.fmt.decimal(round(item.input, 2))}${t.hourShort}${t.cadenceShort[item.cadence]}`;
 }
 
-function ItemRow({ item }: { item: LineItem }) {
+/**
+ * The itemised rows, staggered in as the receipt prints.
+ *
+ * The stagger is a one-shot. Re-ordering the list moves the existing <li>
+ * nodes, and a moved DOM node restarts its CSS animation — so leaving
+ * `animate-rise` on would blank out every row that shifted whenever someone
+ * added a custom line item. Once the print has played we take the class off
+ * and the rows simply stay put.
+ */
+const PRINT_MS = 1600;
+
+function ItemRows({
+  items,
+  animate,
+  hidden,
+  t,
+}: {
+  items: LineItem[];
+  animate: boolean;
+  hidden: number;
+  t: Dict;
+}) {
+  const [printed, setPrinted] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!animate || printed) return;
+    const timer = setTimeout(() => setPrinted(true), PRINT_MS);
+    return () => clearTimeout(timer);
+  }, [animate, printed]);
+
+  const rise = animate && !printed;
+
+  return (
+    <ul className="mt-1.5 space-y-[3px]">
+      {items.map((item, index) => (
+        <li
+          key={item.id}
+          className={rise ? "animate-rise" : undefined}
+          style={rise ? { animationDelay: `${0.5 + index * 0.075}s` } : undefined}
+        >
+          <ItemRow item={item} t={t} />
+        </li>
+      ))}
+      {items.length === 0 ? (
+        <li className="py-3 text-center text-ink-faint">{t.receipt.emptyItems}</li>
+      ) : null}
+      {hidden > 0 ? (
+        <li className="pt-1 text-[0.6875rem] text-ink-faint">
+          {t.receipt.moreItems(hidden)}
+        </li>
+      ) : null}
+    </ul>
+  );
+}
+
+function ItemRow({ item, t }: { item: LineItem; t: Dict }) {
   return (
     <div className="flex items-baseline gap-2">
       {/* truncate (not shrink-0) so a long custom label cannot push the
           amount off the paper on a narrow screen. */}
       <span className="min-w-0 truncate tracking-[0.06em] uppercase">
-        {item.receiptLabel}
+        {itemReceiptLabel(item, t)}
       </span>
-      <span className="shrink-0 text-[0.6875rem] text-ink-faint">{rateLabel(item)}</span>
+      <span className="shrink-0 text-[0.6875rem] text-ink-faint">{rateLabel(item, t)}</span>
       <span aria-hidden className="leader" />
-      <span className="tnum shrink-0 font-medium">{formatDuration(item.yearsSpent)}</span>
+      <span className="tnum shrink-0 font-medium">{t.fmt.duration(item.yearsSpent)}</span>
     </div>
   );
 }
 
-function Totals({ result }: { result: LifeResult }) {
+function Totals({ result, t }: { result: LifeResult; t: Dict }) {
   const leftover = result.unaccountedYears;
 
   return (
@@ -274,16 +310,16 @@ function Totals({ result }: { result: LifeResult }) {
       <Rule />
 
       <dl className="space-y-[2px] text-[0.75rem]">
-        <Field label="Subtotal">
-          <span className="tnum">{formatDuration(result.totalYearsSpent)}</span>
+        <Field label={t.receipt.subtotal}>
+          <span className="tnum">{t.fmt.duration(result.totalYearsSpent)}</span>
         </Field>
         {leftover >= 0 ? (
-          <Field label="Everything else">
-            <span className="tnum">{formatDuration(leftover)}</span>
+          <Field label={t.receipt.everythingElse}>
+            <span className="tnum">{t.fmt.duration(leftover)}</span>
           </Field>
         ) : (
-          <Field label="Overlap credit">
-            <span className="tnum">-{formatDuration(Math.abs(leftover))}</span>
+          <Field label={t.receipt.overlapCredit}>
+            <span className="tnum">-{t.fmt.duration(Math.abs(leftover))}</span>
           </Field>
         )}
       </dl>
@@ -291,15 +327,17 @@ function Totals({ result }: { result: LifeResult }) {
       <DoubleRule />
 
       <div className="flex items-baseline gap-2 text-[0.9375rem] font-bold">
-        <span className="shrink-0 tracking-[0.1em] uppercase">Total life used</span>
+        <span className="shrink-0 tracking-[0.1em] uppercase">{t.receipt.totalLifeUsed}</span>
         <span aria-hidden className="leader" />
-        <span className="tnum shrink-0">{result.age} yrs</span>
+        <span className="tnum shrink-0">
+          {result.age} {t.receipt.years}
+        </span>
       </div>
     </>
   );
 }
 
-function Highlights({ result }: { result: LifeResult }) {
+function Highlights({ result, t }: { result: LifeResult; t: Dict }) {
   const { biggest, questionable } = result;
   if (!biggest) return null;
 
@@ -309,67 +347,67 @@ function Highlights({ result }: { result: LifeResult }) {
       <dl className="space-y-2.5 text-[0.75rem]">
         <div>
           <dt className="text-[0.625rem] tracking-[0.18em] text-ink-faint uppercase">
-            Most expensive item
+            {t.receipt.mostExpensive}
           </dt>
           <dd className="mt-0.5 flex items-baseline gap-2 font-bold">
-            <span className="uppercase">{biggest.receiptLabel}</span>
+            <span className="uppercase">{itemReceiptLabel(biggest, t)}</span>
             <span aria-hidden className="leader" />
-            <span className="tnum">{formatDuration(biggest.yearsSpent)}</span>
+            <span className="tnum">{t.fmt.duration(biggest.yearsSpent)}</span>
           </dd>
         </div>
 
         {questionable && questionable.id !== biggest.id ? (
           <div>
             <dt className="text-[0.625rem] tracking-[0.18em] text-ink-faint uppercase">
-              Most questionable purchase
+              {t.receipt.mostQuestionable}
             </dt>
             <dd className="mt-0.5 flex items-baseline gap-2 font-bold text-stamp">
-              <span className="uppercase">{questionable.receiptLabel}</span>
+              <span className="uppercase">{itemReceiptLabel(questionable, t)}</span>
               <span aria-hidden className="leader" />
-              <span className="tnum">{formatDuration(questionable.yearsSpent)}</span>
+              <span className="tnum">{t.fmt.duration(questionable.yearsSpent)}</span>
             </dd>
           </div>
         ) : null}
 
         <div>
           <dt className="text-[0.625rem] tracking-[0.18em] text-ink-faint uppercase">
-            Total
+            {t.receipt.total}
           </dt>
-          <dd className="mt-0.5 font-bold">One life.</dd>
+          <dd className="mt-0.5 font-bold">{t.receipt.oneLife}</dd>
         </div>
       </dl>
     </>
   );
 }
 
-function Footer({ result }: { result: LifeResult }) {
+function Footer({ result, t }: { result: LifeResult; t: Dict }) {
   return (
     <footer className="relative">
       <p className="text-center text-[0.8125rem] font-bold tracking-[0.3em] uppercase">
-        ** No refunds **
+        {t.receipt.noRefunds}
       </p>
 
-      <NoRefundsStamp />
+      <NoRefundsStamp t={t} />
 
       <Barcode seed={result.seed} className="mt-4" />
       <p className="tnum mt-1.5 text-center text-[0.625rem] tracking-[0.3em] text-ink-muted">
         {orderNumber(result.seed, result.age)}
       </p>
       <p className="mt-3 text-center text-[0.625rem] tracking-[0.16em] text-ink-faint uppercase">
-        Thank you for your time
+        {t.receipt.thanks}
       </p>
     </footer>
   );
 }
 
-function NoRefundsStamp() {
+function NoRefundsStamp({ t }: { t: Dict }) {
   return (
     <div
       aria-hidden
       className="pointer-events-none absolute -top-1 right-0 -rotate-[9deg] select-none"
     >
       <span className="block rounded-[3px] border-[2.5px] border-stamp/55 px-2 py-[3px] text-[0.5625rem] font-bold tracking-[0.18em] text-stamp/70 uppercase">
-        Final
+        {t.receipt.finalStamp}
       </span>
     </div>
   );
