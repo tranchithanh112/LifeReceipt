@@ -44,8 +44,8 @@ variable.
 
 ```
 /            landing, with a live sample receipt in the hero
-/calculate   ten steps: age, eight activities, optional custom activities
-/results     reveal → receipt → shock stats → jokes → projection → refund → share
+/calculate   nine steps: age, then eight activities
+/results     reveal → receipt → shock stats → jokes → forecast + refund → share
 ```
 
 Answers live in `localStorage` under `lifereceipt:answers:v1` and are read
@@ -93,7 +93,7 @@ src/
 ├── components/
 │   ├── receipt/             the receipt: torn edges, barcode, line items
 │   ├── calculator/          the question flow
-│   ├── results/             reveal, stats, projection, refund, share, viral loop
+│   ├── results/             reveal, stats, forecast + refund, share
 │   ├── share/               the two 1080×1920 share cards
 │   ├── site/                wordmark, footer
 │   └── ui/                  button, slider, number field
@@ -155,9 +155,10 @@ The MVP is deliberately backend-free, but the seams are already in place:
 - Arithmetic, formatting, the stats picker and the humour engine were checked
   against a standalone assertion suite, including a 2,000-case fuzz run
   asserting no `NaN`/`Infinity` reaches the UI.
-- The full flow was driven in Chromium at 320px, 390px and 1440px: zero
-  console errors, no horizontal overflow, both share cards exported and
-  inspected, OG image rendered.
+- The full flow was driven in Chromium at 320px, 375px, 390px and 1440px:
+  zero console errors, no horizontal overflow, both share cards exported and
+  inspected, OG image rendered, and the same checks repeated against a
+  simulated Vercel deployment host.
 - `axe-core` (WCAG 2.1 A/AA + best practice) reports zero violations on `/`,
   `/calculate` and `/results`.
 
