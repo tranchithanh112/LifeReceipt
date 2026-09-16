@@ -6,11 +6,27 @@
 
 export const SITE_NAME = "LifeReceipt";
 
-/** Shown on share cards and in copy. Hostname only, no protocol. */
-export const SITE_DOMAIN = "lifereceipt.app";
+/** The canonical home, used when no deployment URL is configured. */
+const CANONICAL_URL = "https://lifereceipt.app";
 
+/**
+ * `NEXT_PUBLIC_SITE_URL` is set for us at build time by next.config.ts, which
+ * falls back to Vercel's injected domain. That keeps OG tags, the sitemap and
+ * the domain printed on every share card pointing somewhere that resolves.
+ */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? `https://${SITE_DOMAIN}`;
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || CANONICAL_URL;
+
+/** Hostname only. Printed on the receipt and on both share cards. */
+export const SITE_DOMAIN = hostnameOf(SITE_URL);
+
+function hostnameOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "lifereceipt.app";
+  }
+}
 
 export const SITE_TITLE = "LifeReceipt — Where Did Your Life Go?";
 

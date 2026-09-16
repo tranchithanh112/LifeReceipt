@@ -35,6 +35,18 @@ function topThree(result: LifeResult): LineItem[] {
   return picks.sort((a, b) => b.yearsLifetime - a.yearsLifetime);
 }
 
+/**
+ * A Vercel-style domain is far longer than "lifereceipt.app", and the footer
+ * has to share its line with the stamp. Step the type down so it never
+ * collides on a card that gets baked into an image.
+ */
+const domainClass =
+  SITE_DOMAIN.length > 24
+    ? "text-[13px] tracking-[0.08em]"
+    : SITE_DOMAIN.length > 18
+      ? "text-[15px] tracking-[0.1em]"
+      : "text-[17px] tracking-[0.14em]";
+
 const frame: React.CSSProperties = {
   width: CARD_WIDTH,
   height: CARD_HEIGHT,
@@ -129,10 +141,8 @@ export function ReceiptShareCard({
       </dl>
 
       <div className="relative z-2 mt-[26px] flex items-end justify-between">
-        <span className="font-mono text-[17px] font-bold tracking-[0.14em]">
-          {SITE_DOMAIN}
-        </span>
-        <span className="rounded-[4px] border-[3px] border-stamp px-[10px] py-[4px] font-mono text-[12px] font-bold tracking-[0.2em] text-stamp uppercase [transform:rotate(-7deg)]">
+        <span className={`font-mono leading-tight font-bold ${domainClass}`}>{SITE_DOMAIN}</span>
+        <span className="shrink-0 rounded-[4px] border-[3px] border-stamp px-[10px] py-[4px] font-mono text-[12px] font-bold tracking-[0.2em] whitespace-nowrap text-stamp uppercase [transform:rotate(-7deg)]">
           No refunds
         </span>
       </div>
@@ -228,9 +238,7 @@ export function StatementShareCard({ result }: { result: LifeResult }) {
       </p>
 
       <div className="mt-[26px] flex items-end justify-between">
-        <span className="font-mono text-[17px] font-bold tracking-[0.14em]">
-          {SITE_DOMAIN}
-        </span>
+        <span className={`font-mono leading-tight font-bold ${domainClass}`}>{SITE_DOMAIN}</span>
         <span className="font-mono text-[13px] tracking-[0.2em] uppercase opacity-55">
           Age {result.age}
         </span>

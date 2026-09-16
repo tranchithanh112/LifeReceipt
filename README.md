@@ -24,8 +24,21 @@ npm run lint
 
 Node 20.9+ is required (Next.js 16).
 
-Set `NEXT_PUBLIC_SITE_URL` when deploying somewhere other than the canonical
-domain — it feeds `metadataBase`, the sitemap and the share links.
+## Deploying
+
+Vercel needs no configuration: import the repository and it builds as-is.
+
+The one thing worth knowing is the site URL, which feeds `metadataBase`, the
+OG image, `robots.txt`, the sitemap, and the domain printed on the receipt and
+both share cards. `next.config.ts` resolves it in this order:
+
+1. `NEXT_PUBLIC_SITE_URL`, if you set it — use this once you have a real domain.
+2. `VERCEL_PROJECT_PRODUCTION_URL`, then `VERCEL_URL`, injected automatically.
+3. The canonical domain in `lib/site.ts`.
+
+So a fresh Vercel import already points every link and every share card at
+its own deployment; pointing a custom domain at it is one environment
+variable.
 
 ## The flow
 
