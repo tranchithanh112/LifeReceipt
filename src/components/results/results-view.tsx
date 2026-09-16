@@ -4,14 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Pencil, RefreshCw } from "lucide-react";
 
+import { CustomItems } from "@/components/custom-items";
 import { Receipt } from "@/components/receipt/receipt";
-import { FutureSelf } from "@/components/results/future-self";
+import { Forecast } from "@/components/results/forecast";
 import { Reveal } from "@/components/results/reveal";
 import { Section } from "@/components/results/section";
 import { ShareSection } from "@/components/results/share-section";
 import { StatGrid } from "@/components/results/stat-grid";
-import { ViralLoop } from "@/components/results/viral-loop";
-import { WhatIf } from "@/components/results/what-if";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Wordmark } from "@/components/site/wordmark";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -73,50 +72,41 @@ export function ResultsView() {
           Your LifeReceipt — where the years have gone, and where they are going
         </h1>
 
-        {/* ------------------- The receipt ------------------- */}
+        {/* ------------------- The receipt -------------------
+            Nothing but the artefact here. Instructions and caveats live
+            further down; this is the screenshot moment. */}
         <section className="px-5 pt-8 pb-12 sm:px-8 sm:pt-12">
-          <div className="mx-auto w-full max-w-3xl">
-            <div className="flex flex-col items-center">
-              <Receipt
-                result={result}
-                name={answers.name}
-                onNameChange={setName}
-                animate={!revealing}
-                verdict={receiptVerdict(result)}
-              />
+          <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
+            <Receipt
+              result={result}
+              name={answers.name}
+              onNameChange={setName}
+              animate={!revealing}
+              verdict={receiptVerdict(result)}
+            />
 
-              <p className="mt-5 max-w-[24rem] text-center text-[0.75rem] leading-relaxed text-ink-faint">
-                Tap the customer line to put your name on it. Some activities overlap, so
-                totals are estimates rather than a literal 24-hour accounting.
-              </p>
-
-              {empty ? (
-                <Link
-                  href="/calculate"
-                  className={cn(buttonVariants({ variant: "primary", size: "md" }), "mt-6")}
-                >
-                  Add some activities
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              ) : null}
-            </div>
+            {empty ? (
+              <Link
+                href="/calculate"
+                className={cn(buttonVariants({ variant: "primary", size: "md" }), "mt-8")}
+              >
+                Add some activities
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            ) : null}
           </div>
         </section>
 
         {/* ------------------- Shock stats ------------------- */}
         {stats.length > 0 ? (
-          <Section
-            eyebrow="If nothing changes"
-            title="The part nobody tells you"
-            lede="Generated from the numbers you just entered. No averages, no strangers — yours."
-          >
+          <Section eyebrow="If nothing changes" title="The part nobody tells you">
             <StatGrid stats={stats} />
           </Section>
         ) : null}
 
         {/* ------------------- Humour ------------------- */}
         {quips.length > 0 ? (
-          <Section eyebrow="Notes on your spending" bordered>
+          <Section eyebrow="Notes on your spending">
             <ul className="space-y-5">
               {quips.map((quip) => (
                 <li
@@ -130,64 +120,47 @@ export function ResultsView() {
           </Section>
         ) : null}
 
-        {/* ------------------- Future self ------------------- */}
+        {/* ------------------- Forecast + refund ------------------- */}
         {!empty ? (
-          <Section
-            eyebrow="Projection"
-            title={`If you continue like this until ${result.lifeExpectancy}…`}
-            lede="Same habits, same rates, no surprises. This is the straight-line forecast."
-          >
-            <FutureSelf result={result} onLifeExpectancyChange={setLifeExpectancy} />
-          </Section>
-        ) : null}
-
-        {/* ------------------- What-if ------------------- */}
-        {!empty && result.yearsRemaining > 0 ? (
           <Section
             eyebrow="The only refund available"
-            title="What if you changed one thing?"
-            lede="Your receipt says no refunds. This is the exception. Drag a habit down and watch the years come back."
+            title={`If you carry on until ${result.lifeExpectancy}…`}
           >
-            <WhatIf result={result} />
+            <Forecast result={result} onLifeExpectancyChange={setLifeExpectancy} />
           </Section>
         ) : null}
 
-        {/* ------------------- Share ------------------- */}
+        {/* ------------------- Share + hand-off ------------------- */}
         {!empty ? (
-          <Section
-            eyebrow="Make it everyone's problem"
-            title="Share your LifeReceipt"
-            lede="Two cards, both built for a story. Pick one, download it, ruin someone's afternoon."
-          >
+          <Section eyebrow="Make it everyone's problem" title="Share your LifeReceipt">
             <ShareSection result={result} name={answers.name} />
           </Section>
         ) : null}
 
-        {/* ------------------- Viral loop ------------------- */}
-        {!empty ? (
-          <Section eyebrow="Think your numbers are bad?" title="Find out whose are worse.">
-            <ViralLoop result={result} />
-          </Section>
-        ) : null}
-
-        {/* ------------------- Method & privacy ------------------- */}
-        <Section eyebrow="How this was calculated">
+        {/* ------------------- Method, tweaks & privacy ------------------- */}
+        <Section eyebrow="The small print">
           <div className="space-y-4 text-[0.9375rem] leading-relaxed text-ink-muted">
             <p>
-              Every answer is converted into an average number of hours per day, then
-              multiplied across your life so far and forward to age{" "}
-              {result.lifeExpectancy}. Weekday answers are spread over five days a week,
-              weekly answers over seven.
+              Every answer becomes an average number of hours per day, multiplied across
+              your life so far and forward to age {result.lifeExpectancy}. Weekday answers
+              spread over five days a week, weekly answers over seven.
             </p>
             <p>
-              Activities are allowed to overlap — scrolling during a commute is counted on
-              both lines, because it costs you both times. That means the itemised total
-              can exceed your age. It is a receipt, not an audit.
+              Activities are allowed to overlap — scrolling on a commute is counted on both
+              lines, because it costs you both times. The itemised total can therefore
+              exceed your age. It is a receipt, not an audit.
             </p>
             <p>
               Everything runs in your browser. Your answers are saved to this device only,
               and clearing them below removes them for good.
             </p>
+          </div>
+
+          <div className="mt-8 border-t border-ink/15 pt-6">
+            <p className="eyebrow">Missed something?</p>
+            <div className="mt-4">
+              <CustomItems />
+            </div>
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">

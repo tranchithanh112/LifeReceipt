@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { ProgressRail } from "@/components/calculator/progress-rail";
 import { Button } from "@/components/ui/button";
@@ -17,23 +17,27 @@ import {
   type ActivityDef,
 } from "@/lib/activities";
 import { toHoursPerDay, yearsOf } from "@/lib/calc";
-import { formatDuration, formatNumber, round } from "@/lib/format";
+import { DAYS_IN_YEAR, formatDuration, formatNumber, round } from "@/lib/format";
 import { useLifeReceipt } from "@/lib/state";
-import { DAYS_IN_YEAR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type Step = { kind: "age" } | { kind: "activity"; def: ActivityDef } | { kind: "custom" };
+type Step = { kind: "age" } | { kind: "activity"; def: ActivityDef };
 
+/**
+ * Nine screens, no more. Custom line items used to be a tenth step; they now
+ * live on the results page, because a typing task between the last slider and
+ * the reveal is the single most expensive screen in the funnel.
+ */
 const STEPS: Step[] = [
   { kind: "age" },
   ...ACTIVITIES.map((def) => ({ kind: "activity" as const, def })),
-  { kind: "custom" },
 ];
+
+const DEFAULT_AGE = 28;
 
 export function Calculator() {
   const router = useRouter();
-  const { answers, hydrated, setAge, setValue, addCustom, updateCustom, removeCustom, reset } =
-    useLifeReceipt();
+  const { answers, result, hydrated, setAge, setValue, reset } = useLifeReceipt();
   const [index, setIndex] = React.useState(0);
 
   const step = STEPS[index];
@@ -46,10 +50,6 @@ export function Calculator() {
     }
     setIndex((i) => Math.min(i + 1, STEPS.length - 1));
   }, [isLast, router]);
-
-  const goBack = React.useCallback(() => {
-    setIndex((i) => Math.max(0, i - 1));
-  }, []);
 
   /** Commits the visible value (or the sensible default) and advances. */
   const confirmAndNext = React.useCallback(() => {
@@ -87,6 +87,8 @@ export function Calculator() {
 
   if (!hydrated) return <CalculatorSkeleton />;
 
+  const billed = result?.totalYearsSpent ?? 0;
+
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="no-print px-5 pt-[calc(1.25rem+var(--safe-top))] sm:px-8">
@@ -101,37 +103,44 @@ export function Calculator() {
               Start over
             </button>
           </div>
+
           <ProgressRail current={index} total={STEPS.length} className="mt-5" />
+
+          {/* The till adding up as you go. Turns a form into a tally and gives
+              every answer an immediate, visible consequence. */}
+          <p
+            aria-live="polite"
+            className="mt-2 flex min-h-[1rem] items-baseline gap-2 font-mono text-[0.6875rem] tracking-[0.12em] uppercase"
+          >
+            {billed > 0 ? (
+              <>
+                <span className="shrink-0 text-ink-faint">Billed so far</span>
+                <span aria-hidden className="leader" />
+                <span className="tnum shrink-0 font-bold text-ink normal-case">
+                  {formatDuration(billed)}
+                </span>
+              </>
+            ) : null}
+          </p>
         </div>
       </header>
 
-      {/* `safe center` keeps a tall step (the custom-activity list) reachable
-          instead of clipping its top the way plain centring would. */}
-      <main className="flex flex-1 items-center-safe px-5 py-8 sm:px-8 sm:py-10">
+      {/* `safe center` keeps a tall step reachable instead of clipping its top
+          the way plain centring would. */}
+      <main className="flex flex-1 items-center-safe px-5 py-6 sm:px-8 sm:py-10">
         <div className="mx-auto w-full max-w-2xl">
           {/* key forces the enter animation to replay on every step */}
           <div key={index} className="animate-fade-up">
             {step.kind === "age" ? (
               <AgeStep value={answers.age} onChange={setAge} />
-            ) : null}
-
-            {step.kind === "activity" ? (
+            ) : (
               <ActivityStep
                 def={step.def}
                 age={answers.age}
                 value={answers.values[step.def.id]}
                 onChange={(next) => setValue(step.def.id, next)}
               />
-            ) : null}
-
-            {step.kind === "custom" ? (
-              <CustomStep
-                items={answers.custom}
-                onAdd={addCustom}
-                onUpdate={updateCustom}
-                onRemove={removeCustom}
-              />
-            ) : null}
+            )}
           </div>
         </div>
       </main>
@@ -141,7 +150,7 @@ export function Calculator() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={goBack}
+            onClick={() => setIndex((i) => Math.max(0, i - 1))}
             disabled={index === 0}
             aria-label="Previous question"
           >
@@ -171,8 +180,6 @@ export function Calculator() {
     </div>
   );
 }
-
-const DEFAULT_AGE = 28;
 
 /* ------------------------------------------------------------------ */
 
@@ -333,11 +340,7 @@ function ActivityStep({
             <>
               That is{" "}
               <strong className="font-semibold text-ink">{formatDuration(spent)}</strong> of
-              your life so far, and{" "}
-              <strong className="font-semibold text-ink">
-                {formatNumber(hoursPerDay * DAYS_IN_YEAR)} hours
-              </strong>{" "}
-              every year.
+              your life so far.
             </>
           ) : (
             "Zero. Nothing to bill you for."
@@ -356,107 +359,6 @@ function formatValue(value: number) {
 function ticksFor(def: ActivityDef) {
   const count = Math.round((def.max - def.min) / def.step);
   return count <= 32 ? count : Math.round(def.max - def.min);
-}
-
-/* --------------------------- Custom --------------------------- */
-
-function CustomStep({
-  items,
-  onAdd,
-  onUpdate,
-  onRemove,
-}: {
-  items: ReturnType<typeof useLifeReceipt>["answers"]["custom"];
-  onAdd: ReturnType<typeof useLifeReceipt>["addCustom"];
-  onUpdate: ReturnType<typeof useLifeReceipt>["updateCustom"];
-  onRemove: ReturnType<typeof useLifeReceipt>["removeCustom"];
-}) {
-  return (
-    <div>
-      <StepHeading
-        eyebrow="✳️  Optional"
-        question="Anything else eating your life?"
-        hint="Cooking, doomscrolling the news, group chats, an unusually demanding hobby. Or skip — the receipt prints either way."
-      />
-
-      <ul className="mt-8 space-y-3">
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className="flex flex-wrap items-center gap-3 rounded-2xl border border-ink/12 bg-receipt/60 p-3"
-          >
-            <input
-              value={item.label}
-              onChange={(event) => onUpdate(item.id, { label: event.target.value })}
-              placeholder="Activity"
-              maxLength={24}
-              aria-label="Activity name"
-              className="min-w-[8rem] flex-1 bg-transparent px-1 text-[0.9375rem] font-medium text-ink outline-none placeholder:text-ink-faint"
-            />
-
-            <NumberField
-              label={`Hours for ${item.label || "this activity"}`}
-              controlName="hours"
-              value={item.value}
-              onChange={(value) => onUpdate(item.id, { value })}
-              min={0}
-              max={item.cadence === "daily" ? 14 : 60}
-              step={0.25}
-              suffix="h"
-            />
-
-            <div
-              role="group"
-              aria-label="How often"
-              className="inline-flex overflow-hidden rounded-full border border-ink/15"
-            >
-              {(["daily", "weekly"] as const).map((cadence) => (
-                <button
-                  key={cadence}
-                  type="button"
-                  aria-pressed={item.cadence === cadence}
-                  onClick={() => onUpdate(item.id, { cadence })}
-                  className={cn(
-                    "px-3 py-1.5 font-mono text-[0.6875rem] tracking-wide uppercase transition-colors",
-                    item.cadence === cadence
-                      ? "bg-ink text-paper"
-                      : "text-ink-muted hover:bg-ink/[0.06]",
-                  )}
-                >
-                  {cadence === "daily" ? "/day" : "/week"}
-                </button>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onRemove(item.id)}
-              aria-label={`Remove ${item.label || "activity"}`}
-              className="grid h-9 w-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-ink/[0.06] hover:text-stamp"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {items.length < 6 ? (
-        <Button
-          variant="outline"
-          size="md"
-          className="mt-4"
-          onClick={() => onAdd({ label: "", value: 1, cadence: "daily" })}
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Add an activity
-        </Button>
-      ) : (
-        <p className="mt-4 text-[0.8125rem] text-ink-faint">
-          Six custom activities is plenty. The receipt has to fit on a phone.
-        </p>
-      )}
-    </div>
-  );
 }
 
 /* --------------------------- Skeleton --------------------------- */

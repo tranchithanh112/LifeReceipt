@@ -59,6 +59,18 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
     });
   }
 
+  if (q && q.yearsLifetime > age) {
+    // The most quotable shape there is: a single habit outgrowing your whole
+    // life to date. Same family as the plain lifetime stat, so only one shows.
+    push({
+      id: "outgrows-your-life",
+      value: formatYearsDecimal(q.yearsLifetime),
+      text: `${gerund(q)} — more than your entire life so far.`,
+      priority: 99,
+      family: "lifetime",
+    });
+  }
+
   if (q && q.yearsLifetime >= 1) {
     push({
       id: "lifetime-questionable",
@@ -115,7 +127,19 @@ export function buildStats(result: LifeResult, limit = 5): Stat[] {
   push(ratioStat(q, loved, "with the people you love", 92));
   if (!q) push(ratioStat(byId.streaming, exercise, "exercising", 70));
 
-  // --- The budget you have left ---
+  // --- The budget you have left, in units people actually feel ---
+  if (result.daysRemaining > 7) {
+    const saturdays = Math.floor(result.daysRemaining / 7);
+    const summers = Math.floor(yearsRemaining);
+    push({
+      id: "saturdays",
+      value: formatNumber(saturdays),
+      text: `Saturdays left. And ${formatNumber(summers)} more summers. That is the whole supply.`,
+      priority: 95,
+      family: "budget-days",
+    });
+  }
+
   if (result.daysRemaining > 0) {
     push({
       id: "days-left",

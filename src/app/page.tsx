@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, Receipt as ReceiptIcon, Undo2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { PrimaryCta } from "@/components/landing/primary-cta";
+import { StickyCta } from "@/components/landing/sticky-cta";
 import { Receipt } from "@/components/receipt/receipt";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Wordmark } from "@/components/site/wordmark";
@@ -17,33 +18,28 @@ export default function LandingPage() {
   return (
     <>
       <header className="no-print px-5 pt-[calc(1.25rem+var(--safe-top))] sm:px-8">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
+        <div className="mx-auto w-full max-w-6xl">
           <Wordmark asLink={false} />
-          <p className="hidden text-[0.75rem] text-ink-faint sm:block">
-            Client-side only. Nothing leaves your phone.
-          </p>
         </div>
       </header>
 
       <main id="main">
-        {/* ---------------- Hero ---------------- */}
-        {/* overflow-x-clip: the decorative rotations below must not create a
-            horizontal scrollbar on narrow screens. */}
-        <section className="overflow-x-clip px-5 pt-10 pb-16 sm:px-8 sm:pt-16 lg:pt-20">
-          <div className="mx-auto grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16">
+        {/* ---------------- Hero ----------------
+            The artefact does the explaining, so the copy above it stays short
+            enough that the receipt itself is on screen within a phone's first
+            viewport. overflow-x-clip contains the decorative rotations. */}
+        <section className="overflow-x-clip px-5 pt-8 pb-12 sm:px-8 sm:pt-14 sm:pb-16 lg:pt-20">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-9 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16">
             <div className="animate-fade-up">
-              <p className="eyebrow">An itemised bill for your one life</p>
-
-              <h1 className="mt-5 font-display text-[clamp(3.25rem,13.5vw,7rem)] leading-[0.87] tracking-[-0.02em] text-balance">
+              <h1 className="font-display text-[clamp(2.875rem,12.5vw,7rem)] leading-[0.88] tracking-[-0.02em] text-balance">
                 Where did your life <em className="italic">go?</em>
               </h1>
 
-              <p className="mt-6 max-w-[34rem] text-[1.0625rem] leading-relaxed text-ink-muted sm:text-lg">
-                See how many years of your life you&rsquo;ve spent sleeping, working,
-                scrolling, commuting and everything in between.
+              <p className="mt-5 max-w-[26ch] text-[1.0625rem] text-ink-muted text-balance sm:text-lg">
+                Nine questions. One very uncomfortable receipt.
               </p>
 
-              <PrimaryCta className="mt-8" />
+              <PrimaryCta className="mt-7" id="hero-cta" />
             </div>
 
             {/* The sample receipt: the real component, real maths, fake person. */}
@@ -69,7 +65,7 @@ export default function LandingPage() {
           aria-label="What an average 80-year life costs"
           className="border-y border-rule/70 bg-paper-deep/40"
         >
-          <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+          <div className="mx-auto w-full max-w-6xl px-5 py-9 sm:px-8 sm:py-11">
             <p className="eyebrow">In an average 80-year life you will spend</p>
             <ul className="mt-5 grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
               {AVERAGE_LIFE.map((entry) => (
@@ -81,99 +77,40 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-6 max-w-[42rem] text-[0.8125rem] leading-relaxed text-ink-faint">
-              Those are averages. Yours are almost certainly worse in one specific,
-              extremely personal way. That is the part worth finding out.
+            <p className="mt-6 text-[0.9375rem] text-ink-muted">
+              Yours are worse somewhere very specific. That&rsquo;s the part worth
+              finding out.
             </p>
           </div>
         </section>
 
-        {/* ---------------- What it prints ---------------- */}
+        {/* ---------------- Close ---------------- */}
         <section className="px-5 py-16 sm:px-8 sm:py-20">
-          <div className="mx-auto w-full max-w-6xl">
-            <h2 className="max-w-[24rem] font-display text-[clamp(2rem,6vw,3rem)] leading-[1.02] tracking-[-0.015em]">
-              Nine questions. One uncomfortable receipt.
+          <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-8 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="max-w-[16ch] font-display text-[clamp(2.25rem,8.5vw,4rem)] leading-[0.95] tracking-[-0.02em]">
+              You only get one. Where is it going?
             </h2>
 
-            <ul className="mt-10 grid gap-10 sm:grid-cols-3 sm:gap-8">
-              <Feature
-                icon={<ReceiptIcon className="h-5 w-5" aria-hidden />}
-                step="01"
-                title="Your life, itemised"
-                body="Every habit printed as a line item, in years and months, on a receipt you can screenshot."
+            <Link
+              id="final-cta"
+              href="/calculate"
+              className={cn(
+                buttonVariants({ variant: "primary", size: "lg" }),
+                "group w-full shrink-0 sm:w-auto",
+              )}
+            >
+              Print my LifeReceipt
+              <ArrowRight
+                className="h-[1.1em] w-[1.1em] transition-transform duration-200 group-hover:translate-x-1"
+                aria-hidden
               />
-              <Feature
-                icon={<Clock3 className="h-5 w-5" aria-hidden />}
-                step="02"
-                title="The projection"
-                body="What each habit has already cost you, and what it will cost by the time you're 80 if nothing changes."
-              />
-              <Feature
-                icon={<Undo2 className="h-5 w-5" aria-hidden />}
-                step="03"
-                title="The only refund"
-                body="Drag one habit down by an hour a day and watch exactly how many years come back."
-              />
-            </ul>
-          </div>
-        </section>
-
-        {/* ---------------- Final CTA ---------------- */}
-        <section className="px-5 pb-20 sm:px-8">
-          <div className="mx-auto w-full max-w-6xl border-t border-rule/70 pt-14">
-            <div className="flex flex-col items-start gap-8 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="max-w-[18ch] font-display text-[clamp(2.25rem,8vw,4rem)] leading-[0.95] tracking-[-0.02em]">
-                  You only get one. Where is it going?
-                </h2>
-                <p className="mt-4 max-w-[36rem] text-ink-muted">
-                  No account, no email, no cookie banner. The maths runs in your browser
-                  and stays there.
-                </p>
-              </div>
-
-              <Link
-                href="/calculate"
-                className={cn(
-                  buttonVariants({ variant: "primary", size: "lg" }),
-                  "group w-full shrink-0 sm:w-auto",
-                )}
-              >
-                Print my LifeReceipt
-                <ArrowRight
-                  className="h-[1.1em] w-[1.1em] transition-transform duration-200 group-hover:translate-x-1"
-                  aria-hidden
-                />
-              </Link>
-            </div>
+            </Link>
           </div>
         </section>
       </main>
 
-      <SiteFooter />
+      <SiteFooter className="mb-[4.5rem] sm:mb-0" />
+      <StickyCta watch="hero-cta,final-cta" />
     </>
-  );
-}
-
-function Feature({
-  icon,
-  step,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  step: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <li className="border-t border-ink/15 pt-5">
-      <div className="flex items-center justify-between text-ink">
-        {icon}
-        <span className="eyebrow">{step}</span>
-      </div>
-      <h3 className="mt-4 text-lg font-semibold tracking-[-0.01em]">{title}</h3>
-      <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-muted">{body}</p>
-    </li>
   );
 }

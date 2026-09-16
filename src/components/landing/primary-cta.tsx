@@ -11,13 +11,14 @@ import { cn } from "@/lib/utils";
  * The hero call to action. Offers a shortcut back to an existing receipt once
  * one is in local storage, so returning visitors never redo the questions.
  */
-export function PrimaryCta({ className }: { className?: string }) {
+export function PrimaryCta({ className, id }: { className?: string; id?: string }) {
   const { result, hydrated } = useLifeReceipt();
   const hasReceipt = hydrated && result != null && result.items.length > 0;
 
   return (
     <div className={cn("flex flex-col items-start gap-3", className)}>
       <Link
+        id={id}
         href="/calculate"
         className={cn(buttonVariants({ variant: "primary", size: "lg" }), "group w-full sm:w-auto")}
       >
@@ -29,7 +30,7 @@ export function PrimaryCta({ className }: { className?: string }) {
       </Link>
 
       <p className="text-[0.8125rem] text-ink-muted">
-        Takes 30 seconds. No signup.
+        30 seconds. No signup. Nothing leaves your phone.
       </p>
 
       {hasReceipt ? (
